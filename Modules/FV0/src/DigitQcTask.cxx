@@ -84,7 +84,7 @@ void DigitQcTask::rebinFromConfig()
 
 void DigitQcTask::initialize(o2::framework::InitContext& /*ctx*/)
 {
-  ILOG(Info, Support) << "initialize DigitQcTask" << ENDM; // QcInfoLogger is used. FairMQ logs will go to there as well.
+  ILOG(Info) << "initialize DigitQcTask" << ENDM; // QcInfoLogger is used. FairMQ logs will go to there as well.
   mStateLastIR2Ch = {};
   mMapChTrgNames.insert({ o2::fv0::ChannelData::kNumberADC, "NumberADC" });
   mMapChTrgNames.insert({ o2::fv0::ChannelData::kIsDoubleEvent, "IsDoubleEvent" });
@@ -104,20 +104,28 @@ void DigitQcTask::initialize(o2::framework::InitContext& /*ctx*/)
   mMapDigitTrgNames.insert({ o2::fit::Triggers::bitOutputsAreBlocked, "OutputsAreBlocked" });
   mMapDigitTrgNames.insert({ o2::fit::Triggers::bitDataIsValid, "DataIsValid" });
   mHistTime2Ch = std::make_unique<TH2F>("TimePerChannel", "Time vs Channel;Channel;Time", sNCHANNELS_PM, 0, sNCHANNELS_PM, 4100, -2050, 2050);
+  mHistTime2Ch->SetOption("colz");
   mHistAmp2Ch = std::make_unique<TH2F>("AmpPerChannel", "Amplitude vs Channel;Channel;Amp", sNCHANNELS_PM, 0, sNCHANNELS_PM, 4200, -100, 4100);
+  mHistAmp2Ch->SetOption("colz");
   mHistOrbit2BC = std::make_unique<TH2F>("OrbitPerBC", "BC-Orbit map;Orbit;BC;", sOrbitsPerTF, 0, sOrbitsPerTF, sBCperOrbit, 0, sBCperOrbit);
+  mHistOrbit2BC->SetOption("colz");
   mHistBC = std::make_unique<TH1F>("BC", "BC;BC;counts;", sBCperOrbit, 0, sBCperOrbit);
 
   mHistEventDensity2Ch = std::make_unique<TH2F>("EventDensityPerChannel", "Event density(in BC) per Channel;Channel;BC;", sNCHANNELS_PM, 0, sNCHANNELS_PM, 10000, 0, 1e5);
+  mHistEventDensity2Ch->SetOption("colz");
 
   mHistChDataBits = std::make_unique<TH2F>("ChannelDataBits", "ChannelData bits per ChannelID;Channel;Bit", sNCHANNELS_PM, 0, sNCHANNELS_PM, mMapChTrgNames.size(), 0, mMapChTrgNames.size());
+  mHistChDataBits->SetOption("colz");
+
   for (const auto& entry : mMapChTrgNames) {
     mHistChDataBits->GetYaxis()->SetBinLabel(entry.first + 1, entry.second.c_str());
   }
   mHistTriggersCorrelation = std::make_unique<TH2F>("TriggersCorrelation", "Correlation of triggers from TCM", mMapDigitTrgNames.size(), 0, mMapDigitTrgNames.size(), mMapDigitTrgNames.size(), 0, mMapDigitTrgNames.size());
-
+  mHistTriggersCorrelation->SetOption("colz");
   mHistBCvsTrg = std::make_unique<TH2F>("BCvsTriggers", "BC vs Triggers;BC;Trg", sBCperOrbit, 0, sBCperOrbit, mMapDigitTrgNames.size(), 0, mMapDigitTrgNames.size());
+  mHistBCvsTrg->SetOption("colz");
   mHistOrbitVsTrg = std::make_unique<TH2F>("OrbitVsTriggers", "Orbit vs Triggers;Orbit;Trg", sOrbitsPerTF, 0, sOrbitsPerTF, mMapDigitTrgNames.size(), 0, mMapDigitTrgNames.size());
+  mHistOrbitVsTrg->SetOption("colz");
 
   mListHistGarbage = new TList();
   mListHistGarbage->SetOwner(kTRUE);
@@ -163,8 +171,8 @@ void DigitQcTask::initialize(o2::framework::InitContext& /*ctx*/)
 
   mHistNchA = std::make_unique<TH1F>("NumChannelsA", "Number of channels(TCM), side A;Nch", sNCHANNELS_PM, 0, sNCHANNELS_PM);
   // mHistNchC = std::make_unique<TH1F>("NumChannelsC", "Number of channels(TCM), side C;Nch", sNCHANNELS_PM, 0, sNCHANNELS_PM);
-  mHistSumAmpA = std::make_unique<TH1F>("SumAmpA", "Sum of amplitudes(TCM), side A;", 1000, 0, 1e4);
-  // mHistSumAmpC = std::make_unique<TH1F>("SumAmpC", "Sum of amplitudes(TCM), side C;", 1000, 0, 1e4);
+  mHistSumAmpA = std::make_unique<TH1F>("SumAmpA", "Sum of amplitudes(TCM), side A;", 1e4, 0, 1e4);
+  // mHistSumAmpC = std::make_unique<TH1F>("SumAmpC", "Sum of amplitudes(TCM), side C;", 1e4, 0, 1e4);
   mHistAverageTimeA = std::make_unique<TH1F>("AverageTimeA", "Average time(TCM), side A", 4100, -2050, 2050);
   // mHistAverageTimeC = std::make_unique<TH1F>("AverageTimeC", "Average time(TCM), side C", 4100, -2050, 2050);
   // mHistTimeSum2Diff = std::make_unique<TH2F>("timeSumVsDiff", "time A/C side: sum VS diff;(TOC-TOA)/2 [ns];(TOA+TOC)/2 [ns]", 400, -52.08, 52.08, 400, -52.08, 52.08); // range of 52.08 ns = 4000*13.02ps = 4000 channels
@@ -253,7 +261,7 @@ void DigitQcTask::initialize(o2::framework::InitContext& /*ctx*/)
 
 void DigitQcTask::startOfActivity(Activity& activity)
 {
-  ILOG(Info, Support) << "startOfActivity" << activity.mId << ENDM;
+  ILOG(Info) << "startOfActivity" << activity.mId << ENDM;
   mHistTime2Ch->Reset();
   mHistAmp2Ch->Reset();
   mHistOrbit2BC->Reset();
@@ -295,7 +303,7 @@ void DigitQcTask::startOfActivity(Activity& activity)
 
 void DigitQcTask::startOfCycle()
 {
-  ILOG(Info, Support) << "startOfCycle" << ENDM;
+  ILOG(Info) << "startOfCycle" << ENDM;
   mTimeMinNS = -1;
   mTimeMaxNS = 0.;
   mTimeCurNS = 0.;
@@ -319,6 +327,10 @@ void DigitQcTask::monitorData(o2::framework::ProcessingContext& ctx)
     mTimeSum += timeMaxNS - timeMinNS;
   }
   for (auto& digit : digits) {
+    // Exclude all BCs, in which laser signals are expected (and trigger outputs are blocked)
+    if (digit.mTriggers.getOutputsAreBlocked()) {
+      continue;
+    }
     const auto& vecChData = digit.getBunchChannelData(channels);
     bool isTCM = true;
     if (digit.mTriggers.timeA == o2::fit::Triggers::DEFAULT_TIME && digit.mTriggers.timeC == o2::fit::Triggers::DEFAULT_TIME) {
@@ -326,7 +338,7 @@ void DigitQcTask::monitorData(o2::framework::ProcessingContext& ctx)
     }
     mHistOrbit2BC->Fill(digit.getIntRecord().orbit % sOrbitsPerTF, digit.getIntRecord().bc);
     mHistBC->Fill(digit.getBC());
-    if (isTCM && !digit.mTriggers.getLaserBit()) {
+    if (isTCM && digit.mTriggers.getDataIsValid() && !digit.mTriggers.getOutputsAreBlocked()) {
       if (digit.mTriggers.nChanA > 0) {
         mHistNchA->Fill(digit.mTriggers.nChanA);
         mHistSumAmpA->Fill(digit.mTriggers.amplA);
@@ -368,7 +380,7 @@ void DigitQcTask::monitorData(o2::framework::ProcessingContext& ctx)
 
       setFEEmodules.insert(mChID2PMhash[chData.ChId]);
     }
-    if (isTCM /* && (digit.getTriggers().triggersignals & (1 << o2::fit::Triggers::bitDataIsValid))*/) {
+    if (isTCM) {
       setFEEmodules.insert(mTCMhash);
     }
     for (const auto& feeHash : setFEEmodules) {
@@ -380,7 +392,7 @@ void DigitQcTask::monitorData(o2::framework::ProcessingContext& ctx)
 
 void DigitQcTask::endOfCycle()
 {
-  ILOG(Info, Support) << "endOfCycle" << ENDM;
+  ILOG(Info) << "endOfCycle" << ENDM;
   // one has to set num. of entries manually because
   // default TH1Reductor gets only mean,stddev and entries (no integral)
   mHistCycleDurationRange->SetBinContent(1., mTimeMaxNS - mTimeMinNS);
@@ -395,7 +407,7 @@ void DigitQcTask::endOfCycle()
 
 void DigitQcTask::endOfActivity(Activity& /*activity*/)
 {
-  ILOG(Info, Support) << "endOfActivity" << ENDM;
+  ILOG(Info) << "endOfActivity" << ENDM;
 }
 
 void DigitQcTask::reset()
